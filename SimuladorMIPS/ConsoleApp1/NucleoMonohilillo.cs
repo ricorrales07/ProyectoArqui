@@ -90,7 +90,259 @@ namespace SimuladorMIPS
 
         private void Execute()
         {
-            throw new NotImplementedException();
+            Debug.Print("Núcleo 1: Inicio de Execute().");
+
+            int X, Y, Z, n;
+            int direccionDeMemoria, bloqueDeMemoria, posicionEnCache, palabra;
+
+            switch (h.IR.CodigoDeOperacion)
+            {
+                case CodOp.FIN:
+                    Debug.Print("Núcleo 1: Instruccion FIN. Pasando a etapa Fin.");
+                    h.Fase = Hilillo.FaseDeHilillo.Fin;
+                    break;
+
+                case CodOp.LW:
+                    Debug.Print("Núcleo 1: Instruccion LW.");
+                    Y = h.IR.Operando[0];
+                    X = h.IR.Operando[1];
+                    n = h.IR.Operando[2];
+
+                    direccionDeMemoria = h.Registro[Y] + n;
+                    bloqueDeMemoria = direccionDeMemoria / 16;
+                    posicionEnCache = bloqueDeMemoria % tamanoCache;
+                    palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
+
+                    Debug.Print("Núcleo 1: LW. Revisando bloque " + bloqueDeMemoria
+                        + " en posición de caché " + posicionEnCache + ".");
+
+                    if (!CacheD.Reservado[posicionEnCache])
+                    {
+                        Debug.Print("Núcleo 1: La posición no está reservada.");
+                        if (Monitor.TryEnter(CacheD.NumBloque[posicionEnCache]))
+                        {
+                            Debug.Print("Núcleo 1: Se bloqueó la posición con éxito.");
+                            if (CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] != EstadoDeBloque.I)
+                            {
+                                Debug.Print("Núcleo 1: Bloque encontrado. Se puede leer sin problema.");
+                                h.Registro[X] = CacheD.Cache[palabra, posicionEnCache];
+                                Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                                h.Fase = Hilillo.FaseDeHilillo.Exec;
+                                Debug.Print("Núcleo 1: LW ejecutado. Pasando a fase Exec...");
+                            }
+                            else // No es la que buscamos o está inválida.
+                            {
+                                Debug.Print("Núcleo 1: No se encontró el bloque en caché.");
+                                if (!busDeDatosReservado)
+                                {
+                                    Debug.Print("Núcleo 1: El bus de datos no está reservado. Pasando a fase FD...");
+                                    busDeDatosReservado = true;
+                                    CacheD.Reservado[posicionEnCache] = true;
+
+                                    Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                                    h.Fase = Hilillo.FaseDeHilillo.FD;
+                                    h.Recursos = false;
+                                    h.EtapaDeSnooping = Hilillo.EtapaSnooping.ANTES;
+                                    Debug.Print("Núcleo 1: Fallo de caché detectado en Execute(). Fin del método.");
+                                }
+                                else
+                                {
+                                    Debug.Print("Núcleo 1: Bus de datos reservado. Fin de Execute().");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Debug.Print("Núcleo 1: No se pudo bloquear posición. Fin de Execute().");
+                        }
+                    }
+                    else
+                    {
+                        Debug.Print("Núcleo 1: Posición reservada. Fin de Execute().");
+                    }
+                    break;
+
+                case CodOp.SW:
+                    Debug.Print("Núcleo 1: Instruccion SW.");
+                    Y = h.IR.Operando[0];
+                    X = h.IR.Operando[1];
+                    n = h.IR.Operando[2];
+
+                    direccionDeMemoria = h.Registro[Y] + n;
+                    bloqueDeMemoria = direccionDeMemoria / 16;
+                    posicionEnCache = bloqueDeMemoria % tamanoCache;
+                    palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
+
+                    Debug.Print("Núcleo 1: SW. Revisando bloque " + bloqueDeMemoria
+                        + " en posición de caché " + posicionEnCache + ".");
+
+                    if (!CacheD.Reservado[posicionEnCache])
+                    {
+                        Debug.Print("Núcleo 1: La posición no está reservada.");
+                        if (Monitor.TryEnter(CacheD.NumBloque[posicionEnCache]))
+                        {
+                            Debug.Print("Núcleo 1: Se bloqueó la posición con éxito.");
+                            if (CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] == EstadoDeBloque.M)
+                            {
+                                Debug.Print("Núcleo 1: Bloque encontrado. Se puede escribir sin problema.");
+                                CacheD.Cache[palabra, posicionEnCache] = h.Registro[X];
+                                Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                                h.Fase = Hilillo.FaseDeHilillo.Exec;
+                                Debug.Print("Núcleo 1: SW ejecutado. Pasando a fase Exec...");
+                            }
+                            else // No es la que buscamos, está inválida o es el caso especial en el que está compartida.
+                            {
+                                Debug.Print("Núcleo 1: No se encontró el bloque en caché.");
+                                if (!busDeDatosReservado)
+                                {
+                                    Debug.Print("Núcleo 1: El bus de datos no está reservado. Pasando a fase FD...");
+                                    busDeDatosReservado = true;
+                                    CacheD.Reservado[posicionEnCache] = true;
+
+                                    Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                                    h.Fase = Hilillo.FaseDeHilillo.FD;
+                                    h.Recursos = false;
+                                    h.EtapaDeSnooping = Hilillo.EtapaSnooping.ANTES;
+                                    Debug.Print("Núcleo 1: Fallo de caché detectado en Execute(). Fin del método.");
+                                }
+                                else
+                                {
+                                    Debug.Print("Núcleo 1: Bus de datos reservado. Fin de Execute().");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Debug.Print("Núcleo 1: No se pudo bloquear posición. Fin de Execute().");
+                        }
+                    }
+                    else
+                    {
+                        Debug.Print("Núcleo 1: Posición reservada. Fin de Execute().");
+                    }
+                    break;
+
+                case CodOp.DADDI:
+                    Debug.Print("Núcleo 1: Instrucción DADDI.");
+                    Y = h.IR.Operando[0];
+                    X = h.IR.Operando[1];
+                    n = h.IR.Operando[2];
+
+                    h.Registro[X] = h.Registro[Y] + n;
+                    Debug.Print("Núcleo 1: DADDI ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.DADD:
+                    Debug.Print("Núcleo 1: Instrucción DADD.");
+                    Y = h.IR.Operando[0];
+                    Z = h.IR.Operando[1];
+                    X = h.IR.Operando[2];
+
+                    h.Registro[X] = h.Registro[Y] + h.Registro[Z];
+                    Debug.Print("Núcleo 1: DADD ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.DSUB:
+                    Debug.Print("Núcleo 1: Instrucción DSUB.");
+                    Y = h.IR.Operando[0];
+                    Z = h.IR.Operando[1];
+                    X = h.IR.Operando[2];
+
+                    h.Registro[X] = h.Registro[Y] - h.Registro[Z];
+                    Debug.Print("Núcleo 1: DSUB ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.DMUL:
+                    Debug.Print("Núcleo 1: Instrucción DMUL.");
+                    Y = h.IR.Operando[0];
+                    Z = h.IR.Operando[1];
+                    X = h.IR.Operando[2];
+
+                    h.Registro[X] = h.Registro[Y] * h.Registro[Z];
+                    Debug.Print("Núcleo 1: DMUL ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.DDIV:
+                    Debug.Print("Núcleo 1: Instrucción DDIV.");
+                    Y = h.IR.Operando[0];
+                    Z = h.IR.Operando[1];
+                    X = h.IR.Operando[2];
+
+                    h.Registro[X] = h.Registro[Y] / h.Registro[Z];
+                    Debug.Print("Núcleo 1: DDIV ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.BEQZ:
+                    Debug.Print("Núcleo 1: Instrucción BEQZ.");
+                    X = h.IR.Operando[0];
+                    n = h.IR.Operando[2];
+
+                    if (h.Registro[X] == 0)
+                    {
+                        Debug.Print("Núcleo 1: Registro " + X + " es cero. Saltando a direccion " + (h.PC + n * 4) + "...");
+                        h.PC += n * 4;
+                    }
+                    else
+                    {
+                        Debug.Print("Núcleo 1: Registro " + X + " no es cero: " + h.Registro[X]);
+                    }
+
+                    Debug.Print("Núcleo 1: BEQZ ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.BNEZ:
+                    Debug.Print("Núcleo 1: Instrucción BNEZ.");
+                    X = h.IR.Operando[0];
+                    n = h.IR.Operando[2];
+
+                    if (h.Registro[X] != 0)
+                    {
+                        Debug.Print("Núcleo 1: Registro " + X + " no es cero (" + h.Registro[X]
+                            + "). Saltando a direccion " + (h.PC + n * 4) + "...");
+                        h.PC += n * 4;
+                    }
+                    else
+                    {
+                        Debug.Print("Núcleo 1: Registro " + X + " sí es cero.");
+                    }
+
+                    Debug.Print("Núcleo 1: BNEZ ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.JAL:
+                    Debug.Print("Núcleo 1: Instrucción JAL.");
+                    n = h.IR.Operando[2];
+
+                    Debug.Print("Núcleo 1: Link a direccion: " + h.PC);
+                    h.Registro[31] = h.PC;
+                    h.PC += n * 4;
+
+                    Debug.Print("Núcleo 1: JAL ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.JR:
+                    Debug.Print("Núcleo 1: Instrucción JR.");
+                    X = h.IR.Operando[0];
+
+                    Debug.Print("Núcleo 1: Saltando a direccion: " + h.Registro[X]);
+                    h.PC = h.Registro[X];
+
+                    Debug.Print("Núcleo 1: JR ejecutado. Fin de Execute().");
+
+                    break;
+
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
         }
 
         private void MissI()
