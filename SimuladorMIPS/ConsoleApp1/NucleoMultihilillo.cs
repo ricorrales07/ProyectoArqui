@@ -243,8 +243,126 @@ namespace SimuladorMIPS
                     }
                     break;
 
+                case CodOp.DADDI:
+                    Debug.Print("Núcleo 0: Instrucción DADDI.");
+                    Y = h[i].IR.Operando[0];
+                    X = h[i].IR.Operando[1];
+                    n = h[i].IR.Operando[2];
+
+                    h[i].Registro[X] = h[i].Registro[Y] + n;
+                    Debug.Print("Núcleo 0: DADDI ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.DADD:
+                    Debug.Print("Núcleo 0: Instrucción DADD.");
+                    Y = h[i].IR.Operando[0];
+                    Z = h[i].IR.Operando[1];
+                    X = h[i].IR.Operando[2];
+
+                    h[i].Registro[X] = h[i].Registro[Y] + h[i].Registro[Z];
+                    Debug.Print("Núcleo 0: DADD ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.DSUB:
+                    Debug.Print("Núcleo 0: Instrucción DSUB.");
+                    Y = h[i].IR.Operando[0];
+                    Z = h[i].IR.Operando[1];
+                    X = h[i].IR.Operando[2];
+
+                    h[i].Registro[X] = h[i].Registro[Y] - h[i].Registro[Z];
+                    Debug.Print("Núcleo 0: DSUB ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.DMUL:
+                    Debug.Print("Núcleo 0: Instrucción DMUL.");
+                    Y = h[i].IR.Operando[0];
+                    Z = h[i].IR.Operando[1];
+                    X = h[i].IR.Operando[2];
+
+                    h[i].Registro[X] = h[i].Registro[Y] * h[i].Registro[Z];
+                    Debug.Print("Núcleo 0: DMUL ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.DDIV:
+                    Debug.Print("Núcleo 0: Instrucción DDIV.");
+                    Y = h[i].IR.Operando[0];
+                    Z = h[i].IR.Operando[1];
+                    X = h[i].IR.Operando[2];
+
+                    h[i].Registro[X] = h[i].Registro[Y] / h[i].Registro[Z];
+                    Debug.Print("Núcleo 0: DDIV ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.BEQZ:
+                    Debug.Print("Núcleo 0: Instrucción BEQZ.");
+                    X = h[i].IR.Operando[0];
+                    n = h[i].IR.Operando[2];
+
+                    if (h[i].Registro[X] == 0)
+                    {
+                        Debug.Print("Núcleo 0: Registro " + X + " es cero. Saltando a direccion " + (h[i].PC + n * 4) + "...");
+                        h[i].PC += n * 4;
+                    }
+                    else
+                    {
+                        Debug.Print("Núcleo 0: Registro " + X + " no es cero: " + h[i].Registro[X]);
+                    }
+
+                    Debug.Print("Núcleo 0: BEQZ ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.BNEZ:
+                    Debug.Print("Núcleo 0: Instrucción BNEZ.");
+                    X = h[i].IR.Operando[0];
+                    n = h[i].IR.Operando[2];
+
+                    if (h[i].Registro[X] != 0)
+                    {
+                        Debug.Print("Núcleo 0: Registro " + X + " no es cero (" + h[i].Registro[X] 
+                            + "). Saltando a direccion " + (h[i].PC + n * 4) + "...");
+                        h[i].PC += n * 4;
+                    }
+                    else
+                    {
+                        Debug.Print("Núcleo 0: Registro " + X + " sí es cero.");
+                    }
+
+                    Debug.Print("Núcleo 0: BNEZ ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.JAL:
+                    Debug.Print("Núcleo 0: Instrucción JAL.");
+                    n = h[i].IR.Operando[2];
+
+                    Debug.Print("Núcleo 0: Link a direccion: " + h[i].PC);
+                    h[i].Registro[31] = h[i].PC;
+                    h[i].PC += n * 4;
+
+                    Debug.Print("Núcleo 0: JAL ejecutado. Fin de Execute().");
+
+                    break;
+
+                case CodOp.JR:
+                    Debug.Print("Núcleo 0: Instrucción JR.");
+                    X = h[i].IR.Operando[0];
+
+                    Debug.Print("Núcleo 0: Saltando a direccion: " + h[i].Registro[X]);
+                    h[i].PC = h[i].Registro[X];
+
+                    Debug.Print("Núcleo 0: JR ejecutado. Fin de Execute().");
+
+                    break;
+
                 default:
-                    throw new NotImplementedException();
+                    Debug.Assert(false);
+                    break;
             }
         }
 
