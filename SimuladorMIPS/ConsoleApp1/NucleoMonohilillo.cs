@@ -31,7 +31,7 @@ namespace SimuladorMIPS
             Terminado = false;
             CacheD = new CacheDatos(tamanoCache);
             CacheI = new CacheInstrucciones(tamanoCache);
-            busDeDatosReservado = busDeInstruccionesReservado = false;
+            //busDeDatosReservado = busDeInstruccionesReservado = false;
             Debug.Print("Núcleo 1 creado.");
         }
 
@@ -116,50 +116,33 @@ namespace SimuladorMIPS
                     Debug.Print("Núcleo 1: LW. Revisando bloque " + bloqueDeMemoria
                         + " en posición de caché " + posicionEnCache + ".");
 
-                    if (!CacheD.Reservado[posicionEnCache])
+                    Debug.Assert(!CacheD.Reservado[posicionEnCache]);
+                    if (Monitor.TryEnter(CacheD.NumBloque[posicionEnCache]))
                     {
-                        Debug.Print("Núcleo 1: La posición no está reservada.");
-                        if (Monitor.TryEnter(CacheD.NumBloque[posicionEnCache]))
+                        Debug.Print("Núcleo 1: Se bloqueó la posición con éxito.");
+                        if (CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] != EstadoDeBloque.I)
                         {
-                            Debug.Print("Núcleo 1: Se bloqueó la posición con éxito.");
-                            if (CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] != EstadoDeBloque.I)
-                            {
-                                Debug.Print("Núcleo 1: Bloque encontrado. Se puede leer sin problema.");
-                                h.Registro[X] = CacheD.Cache[palabra, posicionEnCache];
-                                Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
-                                h.Fase = Hilillo.FaseDeHilillo.Exec;
-                                Debug.Print("Núcleo 1: LW ejecutado. Pasando a fase Exec...");
-                            }
-                            else // No es la que buscamos o está inválida.
-                            {
-                                Debug.Print("Núcleo 1: No se encontró el bloque en caché.");
-                                if (!busDeDatosReservado)
-                                {
-                                    Debug.Print("Núcleo 1: El bus de datos no está reservado. Pasando a fase FD...");
-                                    busDeDatosReservado = true;
-                                    CacheD.Reservado[posicionEnCache] = true;
-
-                                    Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
-                                    h.Fase = Hilillo.FaseDeHilillo.FD;
-                                    h.Recursos = false;
-                                    h.EtapaDeSnooping = Hilillo.EtapaSnooping.ANTES;
-                                    Debug.Print("Núcleo 1: Fallo de caché detectado en Execute(). Fin del método.");
-                                }
-                                else
-                                {
-                                    Debug.Print("Núcleo 1: Bus de datos reservado. Fin de Execute().");
-                                }
-                            }
+                            Debug.Print("Núcleo 1: Bloque encontrado. Se puede leer sin problema.");
+                            h.Registro[X] = CacheD.Cache[palabra, posicionEnCache];
+                            Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                            h.Fase = Hilillo.FaseDeHilillo.Exec;
+                            Debug.Print("Núcleo 1: LW ejecutado. Pasando a fase Exec...");
                         }
-                        else
+                        else // No es la que buscamos o está inválida.
                         {
-                            Debug.Print("Núcleo 1: No se pudo bloquear posición. Fin de Execute().");
+                            Debug.Print("Núcleo 1: No se encontró el bloque en caché. Pasando a fase FD...");
+                            Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                            h.Fase = Hilillo.FaseDeHilillo.FD;
+                            h.Recursos = false;
+                            h.EtapaDeSnooping = Hilillo.EtapaSnooping.ANTES;
+                            Debug.Print("Núcleo 1: Fallo de caché detectado en Execute(). Fin del método.");
                         }
                     }
                     else
                     {
-                        Debug.Print("Núcleo 1: Posición reservada. Fin de Execute().");
+                        Debug.Print("Núcleo 1: No se pudo bloquear posición. Fin de Execute().");
                     }
+
                     break;
 
                 case CodOp.SW:
@@ -176,49 +159,31 @@ namespace SimuladorMIPS
                     Debug.Print("Núcleo 1: SW. Revisando bloque " + bloqueDeMemoria
                         + " en posición de caché " + posicionEnCache + ".");
 
-                    if (!CacheD.Reservado[posicionEnCache])
+                    Debug.Assert(!CacheD.Reservado[posicionEnCache]);
+                    if (Monitor.TryEnter(CacheD.NumBloque[posicionEnCache]))
                     {
-                        Debug.Print("Núcleo 1: La posición no está reservada.");
-                        if (Monitor.TryEnter(CacheD.NumBloque[posicionEnCache]))
+                        Debug.Print("Núcleo 1: Se bloqueó la posición con éxito.");
+                        if (CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] == EstadoDeBloque.M)
                         {
-                            Debug.Print("Núcleo 1: Se bloqueó la posición con éxito.");
-                            if (CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] == EstadoDeBloque.M)
-                            {
-                                Debug.Print("Núcleo 1: Bloque encontrado. Se puede escribir sin problema.");
-                                CacheD.Cache[palabra, posicionEnCache] = h.Registro[X];
-                                Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
-                                h.Fase = Hilillo.FaseDeHilillo.Exec;
-                                Debug.Print("Núcleo 1: SW ejecutado. Pasando a fase Exec...");
-                            }
-                            else // No es la que buscamos, está inválida o es el caso especial en el que está compartida.
-                            {
-                                Debug.Print("Núcleo 1: No se encontró el bloque en caché.");
-                                if (!busDeDatosReservado)
-                                {
-                                    Debug.Print("Núcleo 1: El bus de datos no está reservado. Pasando a fase FD...");
-                                    busDeDatosReservado = true;
-                                    CacheD.Reservado[posicionEnCache] = true;
-
-                                    Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
-                                    h.Fase = Hilillo.FaseDeHilillo.FD;
-                                    h.Recursos = false;
-                                    h.EtapaDeSnooping = Hilillo.EtapaSnooping.ANTES;
-                                    Debug.Print("Núcleo 1: Fallo de caché detectado en Execute(). Fin del método.");
-                                }
-                                else
-                                {
-                                    Debug.Print("Núcleo 1: Bus de datos reservado. Fin de Execute().");
-                                }
-                            }
+                            Debug.Print("Núcleo 1: Bloque encontrado. Se puede escribir sin problema.");
+                            CacheD.Cache[palabra, posicionEnCache] = h.Registro[X];
+                            Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                            h.Fase = Hilillo.FaseDeHilillo.Exec;
+                            Debug.Print("Núcleo 1: SW ejecutado. Pasando a fase Exec...");
                         }
-                        else
+                        else // No es la que buscamos, está inválida o es el caso especial en el que está compartida.
                         {
-                            Debug.Print("Núcleo 1: No se pudo bloquear posición. Fin de Execute().");
+                            Debug.Print("Núcleo 1: No se encontró el bloque en caché. Pasando a fase FD...");
+                            Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                            h.Fase = Hilillo.FaseDeHilillo.FD;
+                            h.Recursos = false;
+                            h.EtapaDeSnooping = Hilillo.EtapaSnooping.ANTES;
+                            Debug.Print("Núcleo 1: Fallo de caché detectado en Execute(). Fin del método.");
                         }
                     }
                     else
                     {
-                        Debug.Print("Núcleo 1: Posición reservada. Fin de Execute().");
+                        Debug.Print("Núcleo 1: No se pudo bloquear posición. Fin de Execute().");
                     }
                     break;
 
@@ -706,8 +671,8 @@ namespace SimuladorMIPS
         private CacheInstrucciones CacheI; // Miembro privado, porque nadie va a acceder a ella desde fuera.
         public const int tamanoCache = 4;
 
-        private bool busDeDatosReservado;
-        private bool busDeInstruccionesReservado;
+        //private bool busDeDatosReservado;
+        //private bool busDeInstruccionesReservado;
 
         public NucleoMultihilillo N0 { get; set; }
     }
