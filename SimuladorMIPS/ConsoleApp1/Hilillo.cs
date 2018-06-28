@@ -28,7 +28,7 @@ namespace SimuladorMIPS
         {
             PC = direccionDeInicio;
             this.Nombre = nombre;
-            IR = new Instruccion();
+            IR = new Instruccion(0);
             Debug.Assert(IR.Operando[0] == 0);
             Registro = new int[32];
             Ciclos = 0;

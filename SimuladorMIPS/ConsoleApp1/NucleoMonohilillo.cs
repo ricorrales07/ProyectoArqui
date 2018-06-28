@@ -32,6 +32,7 @@ namespace SimuladorMIPS
             CacheD = new CacheDatos(tamanoCache);
             CacheI = new CacheInstrucciones(tamanoCache);
             //busDeDatosReservado = busDeInstruccionesReservado = false;
+            h = Hilillo.HililloVacio;
             Debug.Print("Núcleo 1 creado.");
         }
 
