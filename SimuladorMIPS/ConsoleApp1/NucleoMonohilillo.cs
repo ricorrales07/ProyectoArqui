@@ -313,7 +313,62 @@ namespace SimuladorMIPS
 
         private void MissI()
         {
-            throw new NotImplementedException();
+            Debug.Assert(h.Fase == Hilillo.FaseDeHilillo.FI);
+
+            int direccionDeMemoria = h.PC;
+            int bloqueDeMemoria = direccionDeMemoria / 16;
+            int posicionEnCache = bloqueDeMemoria % tamanoCache;
+            int palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
+
+            if (!h.Recursos)
+            {
+                Debug.Print("Núcleo 1: Recursos no disponibles.");
+
+                Debug.Print("Núcleo 1: Fallo de instrucciones. Revisando bloque " + bloqueDeMemoria
+                + " en posición de caché " + posicionEnCache + ".");
+
+                if (!Monitor.TryEnter(Memoria.Instance.BusDeInstrucciones))
+                {
+                    Monitor.Exit(CacheI.NumBloque[posicionEnCache]);
+                    Debug.Print("Núcleo 1: No se pudo bloquear bus de instrucciones. Fin de MissI().");
+                    return;
+                }
+
+                Debug.Print("Núcleo 1: Se bloqueó el bus de instrucciones.");
+
+                h.Recursos = true;
+                h.Ticks = 40;
+            }
+            h.Ticks--;
+            if (h.Ticks > 0)
+            {
+                Debug.Print("Núcleo 1: Ticks restantes: " + h.Ticks);
+                return;
+            }
+            else
+            {
+                Debug.Assert(h.Ticks == 0);
+                Debug.Print("Núcleo 1: Copiando bloque de la dirección de memoria "
+                    + direccionDeMemoria + "(posición de memoria simulada: "
+                    + (direccionDeMemoria / 4) + ") a la posición de caché " + posicionEnCache + " en N0.");
+
+                for (int j = 0; j < 4; j++)
+                {
+                    CacheI.Cache[palabra, posicionEnCache].CodigoDeOperacion = (CodOp)Memoria.Instance.Mem[direccionDeMemoria];
+                    for (int c = 0; c < 3; c++)
+                    {
+                        CacheI.Cache[palabra, posicionEnCache].Operando[c] = Memoria.Instance.Mem[direccionDeMemoria + c];
+                    }
+                }
+
+                Monitor.Exit(Memoria.Instance.BusDeInstrucciones);
+                h.IR = CacheI.Cache[palabra, posicionEnCache]; //carga el IR
+                Debug.Assert(!CacheI.Reservado[posicionEnCache]);
+                h.Fase = Hilillo.FaseDeHilillo.IR;
+
+                Debug.Print("Núcleo 1: Fin de MissI().");
+                return;
+            }
         }
 
         private void MissD()
