@@ -370,7 +370,65 @@ namespace SimuladorMIPS
         // i: número del hilillo del cual se va a manejar el fallo.
         private void MissI(int i)
         {
-            throw new NotImplementedException();
+            Debug.Print("Núcleo 0: Comenzando método MissI.");
+            Debug.Assert(h[i].Fase == Hilillo.FaseDeHilillo.FI);
+
+            int direccionDeMemoria = h[i].PC;
+            int bloqueDeMemoria = direccionDeMemoria / 16;
+            int posicionEnCache = bloqueDeMemoria % tamanoCache;
+            int palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
+
+            if (!h[i].Recursos)
+            {
+                Debug.Print("Núcleo 0: Recursos no disponibles.");
+
+                Debug.Print("Núcleo 0: Fallo de instrucciones. Revisando bloque " + bloqueDeMemoria
+                + " en posición de caché " + posicionEnCache + " para hilillo " + i + ".");
+                
+                if (!Monitor.TryEnter(Memoria.Instance.BusDeInstrucciones))
+                {
+                    Debug.Print("Núcleo 0: No se pudo bloquear bus de instrucciones. Fin de MissI().");
+                    return;
+                }
+
+                Debug.Print("Núcleo 0: Se bloqueó el bus de instrucciones.");
+
+                h[i].Recursos = true;
+                h[i].Ticks = 40;
+            }
+
+            h[i].Ticks--;
+            if (h[i].Ticks > 0)
+            {
+                Debug.Print("Núcleo 0: Ticks restantes: " + h[i].Ticks);
+                return;
+            }
+            else
+            {
+                Debug.Assert(h[i].Ticks == 0);
+                Debug.Print("Núcleo 0: Copiando bloque de la dirección de memoria "
+                    + direccionDeMemoria + "(posición de memoria simulada: "
+                    + (direccionDeMemoria / 4) + ") a la posición de caché " + posicionEnCache + " en N0.");
+
+                for (int j = 0; j < 4; j++)
+                {
+                    CacheI.Cache[palabra, posicionEnCache].CodigoDeOperacion = (CodOp)Memoria.Instance.Mem[direccionDeMemoria];
+                    for (int c = 0; c < 3; c++)
+                    {
+                        CacheI.Cache[palabra, posicionEnCache].Operando[c] = Memoria.Instance.Mem[direccionDeMemoria + c];
+                    }
+                }
+                
+                Monitor.Exit(Memoria.Instance.BusDeInstrucciones);
+                h[i].IR = CacheI.Cache[palabra, posicionEnCache]; //carga el IR
+                CacheI.Reservado[posicionEnCache] = false; 
+                busDeInstruccionesReservado = false;
+                h[i].Fase = Hilillo.FaseDeHilillo.IR;
+
+                Debug.Print("Núcleo 0: Fin de MissI().");
+                return;
+            }
+
         }
 
         // i: número del hilillo del cual se va a manejar el fallo.
