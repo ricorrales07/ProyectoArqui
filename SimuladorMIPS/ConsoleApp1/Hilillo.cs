@@ -10,18 +10,24 @@ namespace SimuladorMIPS
     class Hilillo
     {
         // WARNING: Para evitar problemas de inconsistencia, usar este hilillo siempre que se necesite un hilillo vacío.
-        private static Hilillo hililloVacio;
+        private static readonly Hilillo hililloVacio = new Hilillo(FaseDeHilillo.V, 0, "vacío");
         public static Hilillo HililloVacio
         {
             get
             {
-                if (hililloVacio == null)
-                {
-                    hililloVacio = new Hilillo(0, "vacío");
-                    hililloVacio.Fase = FaseDeHilillo.V;
-                }
                 return hililloVacio;
             }
+        }
+
+        private Hilillo(FaseDeHilillo fase, int direccionDeInicio, string nombre)
+        {
+            PC = direccionDeInicio;
+            this.Nombre = nombre;
+            IR = new Instruccion(0);
+            Debug.Assert(IR.Operando[0] == 0);
+            Registro = new int[32];
+            Ciclos = 0;
+            Fase = fase;
         }
 
         public Hilillo(int direccionDeInicio, string nombre)
