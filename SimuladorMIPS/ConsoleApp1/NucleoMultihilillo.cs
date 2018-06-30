@@ -106,7 +106,41 @@ namespace SimuladorMIPS
         // i: número del hilillo que va a hacer el fetch.
         private void Fetch(int i)
         {
-            throw new NotImplementedException();
+            Debug.Print("Núcleo 0: Inicio de Fetch().");
+
+            int direccionDeMemoria, bloqueDeMemoria, posicionEnCache, palabra;
+
+            //calcular número de bloque
+            direccionDeMemoria = h[i].PC;
+            bloqueDeMemoria = direccionDeMemoria / 16;
+            posicionEnCache = bloqueDeMemoria % tamanoCache;
+            palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
+
+            Debug.Print("Núcleo 0: Fetch(). Revisando bloque " + bloqueDeMemoria
+                        + " en posición de caché " + posicionEnCache + ".");
+
+            if (!CacheI.Reservado[posicionEnCache])
+            { //caché no está reservado
+                Debug.Print("Núcleo 0: Fetch(). Posición de caché no reservada. Revisando caché...");
+                if (CacheI.NumBloque[posicionEnCache] == bloqueDeMemoria)
+                { //es el bloque que queremos
+                    h[i].IR = CacheI.Cache[palabra, posicionEnCache];
+                    h[i].Fase = Hilillo.FaseDeHilillo.IR;
+                    Debug.Print("Núcleo 0 Fetch(): Se encontró el bloque en caché. Pasando a fase IR...");
+                }
+                else
+                { //no es el bloque que queremos
+                    if(!busDeInstruccionesReservado)
+                    {
+                        Debug.Print("Núcleo 0: Fetch(). Bus de instrucciones no reservado. Tomando bus...");
+                        CacheI.Reservado[posicionEnCache] = true;
+                        busDeInstruccionesReservado = true;
+                        h[i].Recursos = false;
+                        h[i].Fase = Hilillo.FaseDeHilillo.FI;
+                        Debug.Print("Núcleo 0: No se encontró el bloque en caché. Pasando a fase FI...");
+                    }
+                }
+            }
         }
 
         // i: número del hilillo que se va a ejecutar.

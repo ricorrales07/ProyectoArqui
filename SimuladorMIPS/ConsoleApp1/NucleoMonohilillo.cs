@@ -86,7 +86,31 @@ namespace SimuladorMIPS
 
         private void Fetch()
         {
-            throw new NotImplementedException();
+            Debug.Print("Núcleo 1: Inicio de Fetch().");
+
+            int direccionDeMemoria, bloqueDeMemoria, posicionEnCache, palabra;
+
+            //calcular número de bloque
+            direccionDeMemoria = h.PC;
+            bloqueDeMemoria = direccionDeMemoria / 16;
+            posicionEnCache = bloqueDeMemoria % tamanoCache;
+            palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
+
+            Debug.Print("Núcleo 1: Fetch(). Revisando bloque " + bloqueDeMemoria
+                        + " en posición de caché " + posicionEnCache + ".");
+
+            if (CacheI.NumBloque[posicionEnCache] == bloqueDeMemoria)
+            { //es el bloque que queremos
+                h.IR = CacheI.Cache[palabra, posicionEnCache];
+                h.Fase = Hilillo.FaseDeHilillo.IR;
+                Debug.Print("Núcleo 1: Se encontró el bloque en caché. Pasando a fase IR...");
+            }
+            else
+            { //no es el bloque que queremos
+                h.Recursos = false;
+                h.Fase = Hilillo.FaseDeHilillo.FI;
+                Debug.Print("Núcleo 1: No se encontró el bloque en caché. Pasando a fase FI...");
+            }
         }
 
         private void Execute()
