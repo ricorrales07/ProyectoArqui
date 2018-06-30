@@ -94,7 +94,7 @@ namespace SimuladorMIPS
             direccionDeMemoria = h.PC;
             bloqueDeMemoria = direccionDeMemoria / 16;
             posicionEnCache = bloqueDeMemoria % tamanoCache;
-            palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
+            palabra = (direccionDeMemoria - bloqueDeMemoria * 64) / 4;
 
             Debug.Print("Núcleo 1: Fetch(). Revisando bloque " + bloqueDeMemoria
                         + " en posición de caché " + posicionEnCache + ".");
