@@ -59,7 +59,7 @@ namespace SimuladorMIPS
                 {
                     archivo = new StreamReader(nombreDeArchivo);
 
-                    int dir = direccionDeInicioDeHilillo;
+                    int dir = 96 + (direccionDeInicioDeHilillo - 384);
                     while (!archivo.EndOfStream)
                     {
                         string instruccion = "";
@@ -79,7 +79,7 @@ namespace SimuladorMIPS
                     }
 
                     colaHilillos.Enqueue(h);
-                    direccionDeInicioDeHilillo = dir;
+                    direccionDeInicioDeHilillo = 384 + (dir - 96);
                 }
                 catch (FileNotFoundException e)
                 {

@@ -348,16 +348,17 @@ namespace SimuladorMIPS
             else
             {
                 Debug.Assert(h.Ticks == 0);
+                int direccionDeMemoriaSimulada = direccionDeMemoria - 384 + 96;
                 Debug.Print("Núcleo 1: Copiando bloque de la dirección de memoria "
                     + direccionDeMemoria + "(posición de memoria simulada: "
-                    + (direccionDeMemoria / 4) + ") a la posición de caché " + posicionEnCache + " en N0.");
+                    + direccionDeMemoriaSimulada + ") a la posición de caché " + posicionEnCache + " en N0.");
 
                 for (int j = 0; j < 4; j++)
                 {
-                    CacheI.Cache[palabra, posicionEnCache].CodigoDeOperacion = (CodOp)Memoria.Instance.Mem[direccionDeMemoria];
+                    CacheI.Cache[palabra, posicionEnCache].CodigoDeOperacion = (CodOp)Memoria.Instance.Mem[direccionDeMemoriaSimulada];
                     for (int c = 0; c < 3; c++)
                     {
-                        CacheI.Cache[palabra, posicionEnCache].Operando[c] = Memoria.Instance.Mem[direccionDeMemoria + c];
+                        CacheI.Cache[palabra, posicionEnCache].Operando[c] = Memoria.Instance.Mem[direccionDeMemoriaSimulada + c];
                     }
                 }
 
