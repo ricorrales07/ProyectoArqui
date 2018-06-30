@@ -125,6 +125,7 @@ namespace SimuladorMIPS
                 if (CacheI.NumBloque[posicionEnCache] == bloqueDeMemoria)
                 { //es el bloque que queremos
                     h[i].IR = CacheI.Cache[palabra, posicionEnCache];
+                    h[i].PC += 4;
                     h[i].Fase = Hilillo.FaseDeHilillo.IR;
                     Debug.Print("Núcleo 0 Fetch(): Se encontró el bloque en caché. Pasando a fase IR...");
                 }
