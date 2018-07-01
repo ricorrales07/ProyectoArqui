@@ -70,7 +70,7 @@ namespace SimuladorMIPS
                 {
                     for (int k = 0; k < 4; k++)
                     {
-                        output += Mem[i * 16 + j * 4 + k] + " "; // YOLO.
+                        output += Mem[96 + i * 16 + j * 4 + k] + " "; // YOLO.
                     }
                     output += "\t";
                 }

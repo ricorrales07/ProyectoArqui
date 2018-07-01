@@ -106,6 +106,7 @@ namespace SimuladorMIPS
                 h.PC += 4;
                 h.Fase = Hilillo.FaseDeHilillo.IR;
                 Debug.Print("Núcleo 1: Se encontró el bloque en caché. Pasando a fase IR...");
+                Execute();
             }
             else
             { //no es el bloque que queremos
@@ -219,6 +220,8 @@ namespace SimuladorMIPS
                     Y = h.IR.Operando[0];
                     X = h.IR.Operando[1];
                     n = h.IR.Operando[2];
+
+                    Debug.Print("Escribiendo " + (h.Registro[Y] + n) + " en R" + X);
 
                     h.Registro[X] = h.Registro[Y] + n;
                     h.Fase = Hilillo.FaseDeHilillo.Exec;
@@ -477,12 +480,13 @@ namespace SimuladorMIPS
                 Debug.Assert(h.Ticks == 0);
 
                 // Se copia a memoria el bloque modificado.
+                int numBloqueModificado = CacheD.NumBloque[posicionEnCache];
                 Debug.Print("Núcleo 1: Copiando bloque de la posición de caché " + posicionEnCache
-                    + " a dirección de memoria " + direccionDeMemoria + "(posición de memoria simulada: "
-                    + (direccionDeMemoria / 4) + ").");
+                    + " a dirección de memoria " + (numBloqueModificado * 16) + "(posición de memoria simulada: "
+                    + (numBloqueModificado * 4) + ").");
                 for (int j = 0; j < 4; j++)
                 {
-                    Memoria.Instance.Mem[direccionDeMemoria / 4 + j] = CacheD.Cache[j, posicionEnCache];
+                    Memoria.Instance.Mem[numBloqueModificado * 4 + j] = CacheD.Cache[j, posicionEnCache];
                 }
 
                 CacheD.Estado[posicionEnCache] = EstadoDeBloque.I;

@@ -154,7 +154,7 @@ namespace SimuladorMIPS
             int X, Y, Z, n;
             int direccionDeMemoria, bloqueDeMemoria, posicionEnCache, palabra;
 
-            switch(h[i].IR.CodigoDeOperacion)
+            switch (h[i].IR.CodigoDeOperacion)
             {
                 case CodOp.FIN:
                     Debug.Print("Núcleo 0: Instruccion FIN. Pasando a etapa Fin.");
@@ -178,7 +178,7 @@ namespace SimuladorMIPS
                     if (!CacheD.Reservado[posicionEnCache])
                     {
                         Debug.Print("Núcleo 0: La posición no está reservada.");
-                        if(Monitor.TryEnter(CacheD.Lock[posicionEnCache]))
+                        if (Monitor.TryEnter(CacheD.Lock[posicionEnCache]))
                         {
                             Debug.Print("Núcleo 0: Se bloqueó la posición con éxito.");
                             if (CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] != EstadoDeBloque.I)
@@ -288,6 +288,8 @@ namespace SimuladorMIPS
                     Y = h[i].IR.Operando[0];
                     X = h[i].IR.Operando[1];
                     n = h[i].IR.Operando[2];
+
+                    Debug.Print("Escribiendo " + (h[i].Registro[Y] + n) + " en R" + X);
 
                     h[i].Registro[X] = h[i].Registro[Y] + n;
                     h[i].Fase = Hilillo.FaseDeHilillo.Exec;
@@ -561,12 +563,13 @@ namespace SimuladorMIPS
                 Debug.Assert(h[i].Ticks == 0);
 
                 // Se copia a memoria el bloque modificado.
+                int numBloqueModificado = CacheD.NumBloque[posicionEnCache];
                 Debug.Print("Núcleo 0: Copiando bloque de la posición de caché " + posicionEnCache
-                    + " a dirección de memoria " + direccionDeMemoria + " (posición de memoria simulada: "
-                    + (direccionDeMemoria / 4) + ").");
+                    + " a dirección de memoria " + (numBloqueModificado * 16) + " (posición de memoria simulada: "
+                    + (numBloqueModificado * 4) + ").");
                 for (int j = 0; j < 4; j++)
                 {
-                    Memoria.Instance.Mem[direccionDeMemoria / 4 + j] = CacheD.Cache[j, posicionEnCache];
+                    Memoria.Instance.Mem[numBloqueModificado * 4 + j] = CacheD.Cache[j, posicionEnCache];
                 }
 
                 CacheD.Estado[posicionEnCache] = EstadoDeBloque.I;
