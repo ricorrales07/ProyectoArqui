@@ -715,12 +715,12 @@ namespace SimuladorMIPS
                     {
                         Debug.Assert(h[i].Ticks == 0);
                         Debug.Print("Núcleo 0: Copiando bloque de la dirección de memoria " 
-                            + direccionDeMemoria + " (posición de memoria simulada: "
-                            + (direccionDeMemoria / 4) + ") a la posición de caché " + posicionEnCache + " en N0.");
+                            + (bloqueDeMemoria * 16) + " (posición de memoria simulada: "
+                            + (bloqueDeMemoria * 4) + ") a la posición de caché " + posicionEnCache + " en N0.");
 
                         for (int j = 0; j < 4; j++)
                         {
-                            CacheD.Cache[j, posicionEnCache] = Memoria.Instance.Mem[direccionDeMemoria / 4 + j];
+                            CacheD.Cache[j, posicionEnCache] = Memoria.Instance.Mem[bloqueDeMemoria * 4 + j];
                         }
                         CacheD.NumBloque[posicionEnCache] = bloqueDeMemoria;
 
@@ -744,8 +744,8 @@ namespace SimuladorMIPS
                     else
                     {
                         Debug.Assert(h[i].IR.CodigoDeOperacion == CodOp.SW);
-                        Debug.Print("Núcleo 0: La operación es un SW, se copia de registro " + X + " a posición en caché " 
-                            + posicionEnCache + ", palabra " + palabra +". El bloque queda modificado.");
+                        Debug.Print("Núcleo 0: La operación es un SW, se copia de registro " + X + " (valor: " + h[i].Registro[X]
+                            + ") a posición en caché " + posicionEnCache + ", palabra " + palabra +". El bloque queda modificado.");
                         CacheD.Cache[palabra, posicionEnCache] = h[i].Registro[X];
                         CacheD.Estado[posicionEnCache] = EstadoDeBloque.M;
                     }
