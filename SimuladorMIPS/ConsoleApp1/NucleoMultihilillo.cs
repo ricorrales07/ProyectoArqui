@@ -731,7 +731,123 @@ namespace SimuladorMIPS
 
         private void Tick()
         {
-            throw new NotImplementedException();
+            Debug.Print("N0: Entrando a Tick()...\n" +
+                "Fase de h[0]: " + h[0].Fase + "\n" +
+                "Fase de h[1]: " + h[1].Fase + "\n");
+
+            //reducir quantums
+            if (h[0].Fase == Hilillo.FaseDeHilillo.Exec)
+                h[0].Quantum--;
+            if (h[1].Fase == Hilillo.FaseDeHilillo.Exec)
+                h[1].Quantum--;
+
+            //tabla
+            if ((h[0].Fase == Hilillo.FaseDeHilillo.FI ||
+                h[0]. Fase == Hilillo.FaseDeHilillo.FD) &&
+                h[1].Fase == Hilillo.FaseDeHilillo.V)
+            { // H0: V && H1: FI|FD
+                if (ColaHilillos.Count != 0)
+                {
+                    h[1] = ColaHilillos.Dequeue();
+                    h[1].Fase = Hilillo.FaseDeHilillo.L;
+                }
+            }
+            else if (h[0].Fase == Hilillo.FaseDeHilillo.Exec)
+            { // H0: Exec - Mayor riesgo de fracasar
+                if (h[1].Fase == Hilillo.FaseDeHilillo.Exec && h[1].Quantum > 0)
+                {
+                    h[1].Fase = Hilillo.FaseDeHilillo.L;
+                }
+                else if (h[1].Fase == Hilillo.FaseDeHilillo.Exec && h[1].Quantum == 0)
+                {
+                    ColaHilillos.Enqueue(h[1]);
+                    h[1] = Hilillo.HililloVacio;
+                }
+                else if (h[1].Fase == Hilillo.FaseDeHilillo.Fin)
+                {
+                    h[1] = Hilillo.HililloVacio;
+                }
+
+                //solo cuando q==0
+                if (h[0].Quantum == 0)
+                {
+                    ColaHilillos.Enqueue(h[0]);
+                    h[0] = ColaHilillos.Dequeue();
+                }
+
+                //común
+                h[0].Fase = Hilillo.FaseDeHilillo.L;
+            }
+            else if (h[0].Fase == Hilillo.FaseDeHilillo.Fin)
+            { // H0: Fin - Riesgo de fracasar
+                if (h[1].Fase == Hilillo.FaseDeHilillo.Exec && h[1].Quantum > 0)
+                {
+                    h[1].Fase = Hilillo.FaseDeHilillo.L;
+                }
+                else if (h[1].Fase == Hilillo.FaseDeHilillo.Exec && h[1].Quantum == 0)
+                {
+                    ColaHilillos.Enqueue(h[1]);
+                    h[1] = Hilillo.HililloVacio;
+                }
+
+                //común
+                if (ColaHilillos.Count == 0)
+                {
+                    h[0] = Hilillo.HililloVacio;
+                }
+                else
+                {
+                    h[0] = ColaHilillos.Dequeue();
+                    h[0].Fase = Hilillo.FaseDeHilillo.L;
+                }
+            }
+            else if (h[1].Fase == Hilillo.FaseDeHilillo.Exec && h[1].Quantum > 0)
+            { //H1: Exec, q > 0 && H0: V|L|FI|IR|FD
+                h[1].Fase = Hilillo.FaseDeHilillo.L;
+            }
+            else if (h[1].Fase == Hilillo.FaseDeHilillo.Exec && h[1].Quantum == 0)
+            { //H1: Exec, q == 0 && H0: V|L|FI|IR|FD
+                if (h[0].Fase == Hilillo.FaseDeHilillo.V)
+                {
+                    ColaHilillos.Enqueue(h[1]);
+                    h[1] = Hilillo.HililloVacio;
+                    h[0] = ColaHilillos.Dequeue();
+                    h[0].Fase = Hilillo.FaseDeHilillo.L;
+                }
+                else if (h[0].Fase == Hilillo.FaseDeHilillo.IR)
+                {
+                    ColaHilillos.Enqueue(h[1]);
+                    h[1] = Hilillo.HililloVacio;
+                }
+                else if (h[0].Fase == Hilillo.FaseDeHilillo.FI ||
+                    h[0].Fase == Hilillo.FaseDeHilillo.FD)
+                {
+                    ColaHilillos.Enqueue(h[1]);
+                    h[1] = ColaHilillos.Dequeue();
+                    h[1].Fase = Hilillo.FaseDeHilillo.L;
+                }
+            }
+            else if (h[1].Fase == Hilillo.FaseDeHilillo.Fin)
+            { //H1: Fin && H0: V|L|FI|IR|FD
+                if (h[0].Fase == Hilillo.FaseDeHilillo.V ||
+                    h[0].Fase == Hilillo.FaseDeHilillo.IR)
+                {
+                    h[1] = Hilillo.HililloVacio;
+                }
+                else if (h[0].Fase == Hilillo.FaseDeHilillo.FI ||
+                  h[0].Fase == Hilillo.FaseDeHilillo.FD)
+                {
+                    if(ColaHilillos.Count == 0)
+                    {
+                        h[1] = Hilillo.HililloVacio;
+                    }
+                    else
+                    {
+                        h[1] = ColaHilillos.Dequeue();
+                        h[1].Fase = Hilillo.FaseDeHilillo.L;
+                    }
+                }
+            }
         }
 
         // Retorna información general de los hilillos que están corriendo para desplegarla en pantalla durante la ejecución.
