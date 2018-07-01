@@ -780,6 +780,7 @@ namespace SimuladorMIPS
             }
             else if (h[0].Fase == Hilillo.FaseDeHilillo.Fin)
             { // H0: Fin - Riesgo de fracasar
+                HilillosFinalizados.Add(h[0]);
                 if (h[1].Fase == Hilillo.FaseDeHilillo.Exec && h[1].Quantum > 0)
                 {
                     h[1].Fase = Hilillo.FaseDeHilillo.L;
@@ -829,6 +830,7 @@ namespace SimuladorMIPS
             }
             else if (h[1].Fase == Hilillo.FaseDeHilillo.Fin)
             { //H1: Fin && H0: V|L|FI|IR|FD
+                HilillosFinalizados.Add(h[1]);
                 if (h[0].Fase == Hilillo.FaseDeHilillo.V ||
                     h[0].Fase == Hilillo.FaseDeHilillo.IR)
                 {
@@ -852,6 +854,12 @@ namespace SimuladorMIPS
             //aumentar ciclos
             h[0].Ciclos++;
             h[1].Ciclos++;
+
+            //fin?
+            if(h[0].Fase == Hilillo.FaseDeHilillo.V && h[1].Fase == Hilillo.FaseDeHilillo.V)
+            {
+                Terminado = true;
+            }
 
             //barrera
             Barrera.SignalAndWait();
