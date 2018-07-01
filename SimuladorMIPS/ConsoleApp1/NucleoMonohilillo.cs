@@ -661,7 +661,55 @@ namespace SimuladorMIPS
 
         private void Tick()
         {
-            throw new NotImplementedException();
+            Debug.Print("N1: Entrando a Tick()...\n" +
+                "Fase de h: " + h.Fase + "\n");
+
+            //tabla
+            if(h.Fase == Hilillo.FaseDeHilillo.V)
+            {
+                if (ColaHilillos.Count != 0)
+                {
+                    h = ColaHilillos.Dequeue();
+                    h.Fase = Hilillo.FaseDeHilillo.L;
+                    Terminado = false;
+                }
+            }
+            else if (h.Fase == Hilillo.FaseDeHilillo.Exec)
+            {
+                h.Quantum--; //reducir quantum
+
+                if (h.Quantum == 0)
+                {
+                    ColaHilillos.Enqueue(h);
+                    h = ColaHilillos.Dequeue();
+                }
+
+                h.Fase = Hilillo.FaseDeHilillo.L;
+            }
+            else if (h.Fase == Hilillo.FaseDeHilillo.Fin)
+            {
+                if (ColaHilillos.Count == 0)
+                {
+                    h = Hilillo.HililloVacio;
+                }
+                else
+                {
+                    h = ColaHilillos.Dequeue();
+                    h.Fase = Hilillo.FaseDeHilillo.L;
+                }
+            }
+
+            //aumentar ciclos
+            h.Ciclos++;
+
+            //fin?
+            if (h.Fase == Hilillo.FaseDeHilillo.V)
+            {
+                Terminado = true;
+            }
+
+            //barrera
+            Barrera.SignalAndWait();
         }
 
         // Retorna información general de los hilillos que están corriendo para desplegarla en pantalla durante la ejecución.
