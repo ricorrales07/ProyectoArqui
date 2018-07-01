@@ -676,12 +676,12 @@ namespace SimuladorMIPS
                     {
                         Debug.Assert(h[i].Ticks == 0);
                         Debug.Print("Núcleo 0: Copiando bloque de la posición de caché " + posicionEnCacheN1
-                            + " (en N1) a dirección de memoria " + direccionDeMemoria + " (posición de memoria simulada: "
-                            + (direccionDeMemoria / 4) + ") y a la posición de caché " + posicionEnCache + " en N0.");
+                            + " (en N1) a dirección de memoria " + (bloqueDeMemoria * 16) + " (posición de memoria simulada: "
+                            + (bloqueDeMemoria * 4) + ") y a la posición de caché " + posicionEnCache + " en N0.");
 
                         for (int j = 0; j < 4; j++)
                         {
-                            CacheD.Cache[j, posicionEnCache] = Memoria.Instance.Mem[direccionDeMemoria / 4 + j] = N1.CacheD.Cache[j, posicionEnCacheN1];
+                            CacheD.Cache[j, posicionEnCache] = Memoria.Instance.Mem[bloqueDeMemoria * 4 + j] = N1.CacheD.Cache[j, posicionEnCacheN1];
                         }
                         CacheD.NumBloque[posicionEnCache] = bloqueDeMemoria;
 
