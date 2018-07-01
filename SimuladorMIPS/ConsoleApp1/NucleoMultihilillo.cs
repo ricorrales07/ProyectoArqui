@@ -848,6 +848,13 @@ namespace SimuladorMIPS
                     }
                 }
             }
+
+            //aumentar ciclos
+            h[0].Ciclos++;
+            h[1].Ciclos++;
+
+            //barrera
+            Barrera.SignalAndWait();
         }
 
         // Retorna información general de los hilillos que están corriendo para desplegarla en pantalla durante la ejecución.
