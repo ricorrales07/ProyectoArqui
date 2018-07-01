@@ -457,6 +457,7 @@ namespace SimuladorMIPS
                 
                 Monitor.Exit(Memoria.Instance.BusDeInstrucciones);
                 h[i].IR = CacheI.Cache[palabra, posicionEnCache]; //carga el IR
+                h[i].PC += 4;
                 CacheI.Reservado[posicionEnCache] = false; 
                 busDeInstruccionesReservado = false;
                 h[i].Fase = Hilillo.FaseDeHilillo.IR;
