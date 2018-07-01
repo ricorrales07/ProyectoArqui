@@ -688,6 +688,7 @@ namespace SimuladorMIPS
             }
             else if (h.Fase == Hilillo.FaseDeHilillo.Fin)
             {
+                HilillosFinalizados.Add(h);
                 if (ColaHilillos.Count == 0)
                 {
                     h = Hilillo.HililloVacio;
