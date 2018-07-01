@@ -48,6 +48,7 @@ namespace SimuladorMIPS
 
             output += Nombre + ":\n"
                 + "Ciclos: " + Ciclos + "\n"
+                + "Quantum: " + Quantum + "\n"
                 + "Registros: ";
 
             for (int i = 0; i < 32; i++)

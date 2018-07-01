@@ -112,14 +112,10 @@ namespace SimuladorMIPS
             nucleo0.Start();
             nucleo1.Start();
 
-            Debug.Print("Hilo principal: Entrando a sección crítica: revisando si los núcleos terminaron...");
-            Monitor.Enter(N0.Terminado);
-            Monitor.Enter(N1.Terminado);
-            while(!N0.Terminado || !N1.Terminado) // Sección crítica.
+            Debug.Print("Hilo principal: Revisando si los núcleos terminaron...");
+            while(!N0.Terminado || !N1.Terminado)
             {
-                Monitor.Exit(N0.Terminado);
-                Monitor.Exit(N1.Terminado);
-                Debug.Print("Hilo principal: fin de sección crítica. Los núcleos no han terminado.");
+                Debug.Print("Hilo principal: Los núcleos no han terminado.");
 
                 reloj++;
 
@@ -155,13 +151,9 @@ namespace SimuladorMIPS
                 // Pasar por la barrera.
                 barrera.SignalAndWait();
 
-                Debug.Print("Hilo principal: Entrando a sección crítica: revisando si los núcleos terminaron...");
-                Monitor.Enter(N0.Terminado);
-                Monitor.Enter(N1.Terminado);
+                Debug.Print("Hilo principal: Revisando si los núcleos terminaron...");
             }
-            Monitor.Exit(N0.Terminado);
-            Monitor.Exit(N1.Terminado);
-            Debug.Print("Hilo principal: fin de sección crítica. Los núcleos terminaron.");
+            Debug.Print("Hilo principal: Los núcleos terminaron.");
 
             // Finalizar hilos y barrera.
             nucleo0.Abort(); // TODO: Verificar correcto funcionamiento de esta función.
@@ -187,6 +179,9 @@ namespace SimuladorMIPS
             {
                 Console.WriteLine(h.PrettyPrintRegistrosYCiclos());
             }
+
+            Console.WriteLine("Fin de la simulación. Presione cualquier tecla para terminar.");
+            Console.ReadKey();
         }
     }
 }

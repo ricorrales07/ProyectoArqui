@@ -44,6 +44,7 @@ namespace SimuladorMIPS
                 if (ColaHilillos.Count > 0)
                 {
                     h = ColaHilillos.Dequeue();
+                    h.Quantum = this.Quantum;
                     // TIP: Es útil usar asserts de Debug cuando pensamos un caso que "nunca pasa".
                     Debug.Assert(h.Fase == Hilillo.FaseDeHilillo.L); // Creo que debería estar listo, pues es el inicio de la simulación.
                 }
@@ -94,14 +95,14 @@ namespace SimuladorMIPS
             direccionDeMemoria = h.PC;
             bloqueDeMemoria = direccionDeMemoria / 16;
             posicionEnCache = bloqueDeMemoria % tamanoCache;
-            palabra = (direccionDeMemoria - bloqueDeMemoria * 64) / 4;
+            palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
 
             Debug.Print("Núcleo 1: Fetch(). Revisando bloque " + bloqueDeMemoria
                         + " en posición de caché " + posicionEnCache + ".");
 
             if (CacheI.NumBloque[posicionEnCache] == bloqueDeMemoria)
             { //es el bloque que queremos
-                h.IR = CacheI.Cache[palabra, posicionEnCache];
+                h.IR = new Instruccion(CacheI.Cache[palabra, posicionEnCache]);
                 h.PC += 4;
                 h.Fase = Hilillo.FaseDeHilillo.IR;
                 Debug.Print("Núcleo 1: Se encontró el bloque en caché. Pasando a fase IR...");
@@ -143,21 +144,21 @@ namespace SimuladorMIPS
                         + " en posición de caché " + posicionEnCache + ".");
 
                     Debug.Assert(!CacheD.Reservado[posicionEnCache]);
-                    if (Monitor.TryEnter(CacheD.NumBloque[posicionEnCache]))
+                    if (Monitor.TryEnter(CacheD.Lock[posicionEnCache]))
                     {
                         Debug.Print("Núcleo 1: Se bloqueó la posición con éxito.");
                         if (CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] != EstadoDeBloque.I)
                         {
                             Debug.Print("Núcleo 1: Bloque encontrado. Se puede leer sin problema.");
                             h.Registro[X] = CacheD.Cache[palabra, posicionEnCache];
-                            Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                            Monitor.Exit(CacheD.Lock[posicionEnCache]);
                             h.Fase = Hilillo.FaseDeHilillo.Exec;
                             Debug.Print("Núcleo 1: LW ejecutado. Pasando a fase Exec...");
                         }
                         else // No es la que buscamos o está inválida.
                         {
                             Debug.Print("Núcleo 1: No se encontró el bloque en caché. Pasando a fase FD...");
-                            Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                            Monitor.Exit(CacheD.Lock[posicionEnCache]);
                             h.Fase = Hilillo.FaseDeHilillo.FD;
                             h.Recursos = false;
                             h.EtapaDeSnooping = Hilillo.EtapaSnooping.ANTES;
@@ -186,21 +187,21 @@ namespace SimuladorMIPS
                         + " en posición de caché " + posicionEnCache + ".");
 
                     Debug.Assert(!CacheD.Reservado[posicionEnCache]);
-                    if (Monitor.TryEnter(CacheD.NumBloque[posicionEnCache]))
+                    if (Monitor.TryEnter(CacheD.Lock[posicionEnCache]))
                     {
                         Debug.Print("Núcleo 1: Se bloqueó la posición con éxito.");
                         if (CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] == EstadoDeBloque.M)
                         {
                             Debug.Print("Núcleo 1: Bloque encontrado. Se puede escribir sin problema.");
                             CacheD.Cache[palabra, posicionEnCache] = h.Registro[X];
-                            Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                            Monitor.Exit(CacheD.Lock[posicionEnCache]);
                             h.Fase = Hilillo.FaseDeHilillo.Exec;
                             Debug.Print("Núcleo 1: SW ejecutado. Pasando a fase Exec...");
                         }
                         else // No es la que buscamos, está inválida o es el caso especial en el que está compartida.
                         {
                             Debug.Print("Núcleo 1: No se encontró el bloque en caché. Pasando a fase FD...");
-                            Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                            Monitor.Exit(CacheD.Lock[posicionEnCache]);
                             h.Fase = Hilillo.FaseDeHilillo.FD;
                             h.Recursos = false;
                             h.EtapaDeSnooping = Hilillo.EtapaSnooping.ANTES;
@@ -220,6 +221,7 @@ namespace SimuladorMIPS
                     n = h.IR.Operando[2];
 
                     h.Registro[X] = h.Registro[Y] + n;
+                    h.Fase = Hilillo.FaseDeHilillo.Exec;
                     Debug.Print("Núcleo 1: DADDI ejecutado. Fin de Execute().");
 
                     break;
@@ -231,6 +233,7 @@ namespace SimuladorMIPS
                     X = h.IR.Operando[2];
 
                     h.Registro[X] = h.Registro[Y] + h.Registro[Z];
+                    h.Fase = Hilillo.FaseDeHilillo.Exec;
                     Debug.Print("Núcleo 1: DADD ejecutado. Fin de Execute().");
 
                     break;
@@ -242,6 +245,7 @@ namespace SimuladorMIPS
                     X = h.IR.Operando[2];
 
                     h.Registro[X] = h.Registro[Y] - h.Registro[Z];
+                    h.Fase = Hilillo.FaseDeHilillo.Exec;
                     Debug.Print("Núcleo 1: DSUB ejecutado. Fin de Execute().");
 
                     break;
@@ -253,6 +257,7 @@ namespace SimuladorMIPS
                     X = h.IR.Operando[2];
 
                     h.Registro[X] = h.Registro[Y] * h.Registro[Z];
+                    h.Fase = Hilillo.FaseDeHilillo.Exec;
                     Debug.Print("Núcleo 1: DMUL ejecutado. Fin de Execute().");
 
                     break;
@@ -264,6 +269,7 @@ namespace SimuladorMIPS
                     X = h.IR.Operando[2];
 
                     h.Registro[X] = h.Registro[Y] / h.Registro[Z];
+                    h.Fase = Hilillo.FaseDeHilillo.Exec;
                     Debug.Print("Núcleo 1: DDIV ejecutado. Fin de Execute().");
 
                     break;
@@ -283,6 +289,7 @@ namespace SimuladorMIPS
                         Debug.Print("Núcleo 1: Registro " + X + " no es cero: " + h.Registro[X]);
                     }
 
+                    h.Fase = Hilillo.FaseDeHilillo.Exec;
                     Debug.Print("Núcleo 1: BEQZ ejecutado. Fin de Execute().");
 
                     break;
@@ -303,6 +310,7 @@ namespace SimuladorMIPS
                         Debug.Print("Núcleo 1: Registro " + X + " sí es cero.");
                     }
 
+                    h.Fase = Hilillo.FaseDeHilillo.Exec;
                     Debug.Print("Núcleo 1: BNEZ ejecutado. Fin de Execute().");
 
                     break;
@@ -313,8 +321,9 @@ namespace SimuladorMIPS
 
                     Debug.Print("Núcleo 1: Link a direccion: " + h.PC);
                     h.Registro[31] = h.PC;
-                    h.PC += n * 4;
+                    h.PC += n;
 
+                    h.Fase = Hilillo.FaseDeHilillo.Exec;
                     Debug.Print("Núcleo 1: JAL ejecutado. Fin de Execute().");
 
                     break;
@@ -326,6 +335,7 @@ namespace SimuladorMIPS
                     Debug.Print("Núcleo 1: Saltando a direccion: " + h.Registro[X]);
                     h.PC = h.Registro[X];
 
+                    h.Fase = Hilillo.FaseDeHilillo.Exec;
                     Debug.Print("Núcleo 1: JR ejecutado. Fin de Execute().");
 
                     break;
@@ -354,7 +364,6 @@ namespace SimuladorMIPS
 
                 if (!Monitor.TryEnter(Memoria.Instance.BusDeInstrucciones))
                 {
-                    Monitor.Exit(CacheI.NumBloque[posicionEnCache]);
                     Debug.Print("Núcleo 1: No se pudo bloquear bus de instrucciones. Fin de MissI().");
                     return;
                 }
@@ -373,22 +382,24 @@ namespace SimuladorMIPS
             else
             {
                 Debug.Assert(h.Ticks == 0);
-                int direccionDeMemoriaSimulada = direccionDeMemoria - 384 + 96;
+                int direccionDeMemoriaSimulada = bloqueDeMemoria * 16 - 384 + 96;
                 Debug.Print("Núcleo 1: Copiando bloque de la dirección de memoria "
-                    + direccionDeMemoria + "(posición de memoria simulada: "
-                    + direccionDeMemoriaSimulada + ") a la posición de caché " + posicionEnCache + " en N0.");
+                    + (bloqueDeMemoria * 16) + " (posición de memoria simulada: "
+                    + direccionDeMemoriaSimulada + ") a la posición de caché " + posicionEnCache + " en N1.");
 
                 for (int j = 0; j < 4; j++)
                 {
-                    CacheI.Cache[palabra, posicionEnCache].CodigoDeOperacion = (CodOp)Memoria.Instance.Mem[direccionDeMemoriaSimulada];
+                    CacheI.Cache[j, posicionEnCache].CodigoDeOperacion = (CodOp)Memoria.Instance.Mem[direccionDeMemoriaSimulada];
                     for (int c = 0; c < 3; c++)
                     {
-                        CacheI.Cache[palabra, posicionEnCache].Operando[c] = Memoria.Instance.Mem[direccionDeMemoriaSimulada + c];
+                        CacheI.Cache[j, posicionEnCache].Operando[c] = Memoria.Instance.Mem[direccionDeMemoriaSimulada + 1 + c];
                     }
+                    direccionDeMemoriaSimulada += 4;
                 }
+                CacheI.NumBloque[posicionEnCache] = bloqueDeMemoria;
 
                 Monitor.Exit(Memoria.Instance.BusDeInstrucciones);
-                h.IR = CacheI.Cache[palabra, posicionEnCache]; //carga el IR
+                h.IR = new Instruccion(CacheI.Cache[palabra, posicionEnCache]); //carga el IR
                 h.PC += 4;
                 Debug.Assert(!CacheI.Reservado[posicionEnCache]);
                 h.Fase = Hilillo.FaseDeHilillo.IR;
@@ -417,14 +428,14 @@ namespace SimuladorMIPS
             {
                 Debug.Print("Núcleo 1: Recursos no disponibles.");
 
-                if (!Monitor.TryEnter(CacheD.NumBloque[posicionEnCache]))
+                if (!Monitor.TryEnter(CacheD.Lock[posicionEnCache]))
                 {
                     Debug.Print("Núcleo 1: No se pudo bloquear posición en caché. Fin de MissD().");
                     return;
                 }
                 if (!Monitor.TryEnter(Memoria.Instance.BusDeDatos))
                 {
-                    Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                    Monitor.Exit(CacheD.Lock[posicionEnCache]);
                     Debug.Print("Núcleo 1: No se pudo bloquear bus de datos. Fin de MissD().");
                     return;
                 }
@@ -446,6 +457,8 @@ namespace SimuladorMIPS
             else
             {
                 Debug.Print("Núcleo 1: Recursos disponibles.");
+                Debug.Assert(Monitor.IsEntered(CacheD.Lock[posicionEnCache]));
+                Debug.Assert(Monitor.IsEntered(Memoria.Instance.BusDeDatos));
 
                 if (CacheD.Estado[posicionEnCache] != EstadoDeBloque.M)
                 {
@@ -477,18 +490,19 @@ namespace SimuladorMIPS
 
             RevisarEtapaSnooping:
             Debug.Print("Núcleo 1: Revisando etapa de snooping...");
-            int posicionEnCacheN0 = bloqueDeMemoria % NucleoMonohilillo.tamanoCache;
+            int posicionEnCacheN0 = bloqueDeMemoria % NucleoMultihilillo.tamanoCache;
             switch (h.EtapaDeSnooping)
             {
                 case Hilillo.EtapaSnooping.ANTES:
-                    Debug.Print("Núcleo 1: Etapa de snooping: ANTES.");
-                    if (!Monitor.TryEnter(N0.CacheD.NumBloque[posicionEnCacheN0]))
+                    Debug.Print("Núcleo 1: Etapa de snooping: ANTES. Tratando de bloquear posición de caché "
+                        + posicionEnCacheN0 + " en N0.");
+                    if (!Monitor.TryEnter(N0.CacheD.Lock[posicionEnCacheN0]))
                     {
-                        Debug.Print("Núcleo 1: No se pudo reservar la posición de caché en N0. Fin de missD().");
+                        Debug.Print("Núcleo 1: No se pudo bloquear la posición de caché en N0. Fin de missD().");
                         return;
                     }
 
-                    Debug.Print("Núcleo 1: Posición de caché en N0 reservada.");
+                    Debug.Print("Núcleo 1: Posición de caché en N0 bloqueada.");
 
                     if (N0.CacheD.NumBloque[posicionEnCacheN0] != bloqueDeMemoria
                         || (N0.CacheD.NumBloque[posicionEnCacheN0] == bloqueDeMemoria
@@ -500,14 +514,14 @@ namespace SimuladorMIPS
                         {
                             Debug.Print("Núcleo 1: Se debe cargar dato desde memoria. Pasando a etapa \"cargar\"...");
                             h.EtapaDeSnooping = Hilillo.EtapaSnooping.CARGAR;
-                            Monitor.Exit(N0.CacheD.NumBloque[posicionEnCacheN0]);
+                            Monitor.Exit(N0.CacheD.Lock[posicionEnCacheN0]);
                             h.Ticks = 40;
                             goto case Hilillo.EtapaSnooping.CARGAR;
                         }
                         else
                         {
                             Debug.Print("Núcleo 1: No es necesario cargar el dato de memoria ni hacer nada en N0. Pasando a etapa \"después\"...");
-                            Monitor.Exit(N0.CacheD.NumBloque[posicionEnCacheN0]);
+                            Monitor.Exit(N0.CacheD.Lock[posicionEnCacheN0]);
                             h.EtapaDeSnooping = Hilillo.EtapaSnooping.DESPUES;
                             goto case Hilillo.EtapaSnooping.DESPUES;
                         }
@@ -524,7 +538,7 @@ namespace SimuladorMIPS
                                 Debug.Print("Núcleo 1: La operación es un LW, por lo que no hay que hacer nada en N0.");
                                 Debug.Print("Núcleo 1: Se debe cargar dato desde memoria. Pasando a etapa \"cargar\"...");
                                 h.EtapaDeSnooping = Hilillo.EtapaSnooping.CARGAR;
-                                Monitor.Exit(N0.CacheD.NumBloque[posicionEnCacheN0]);
+                                Monitor.Exit(N0.CacheD.Lock[posicionEnCacheN0]);
                                 h.Ticks = 40;
                                 goto case Hilillo.EtapaSnooping.CARGAR;
                             }
@@ -536,18 +550,18 @@ namespace SimuladorMIPS
 
                                 if (CacheD.Estado[posicionEnCache] != EstadoDeBloque.C)
                                 {
+                                    Debug.Assert(CacheD.Estado[posicionEnCache] == EstadoDeBloque.I);
                                     Debug.Print("Núcleo 1: Se debe cargar dato desde memoria. Pasando a etapa \"cargar\"...");
                                     h.EtapaDeSnooping = Hilillo.EtapaSnooping.CARGAR;
-                                    Monitor.Exit(N0.CacheD.NumBloque[posicionEnCacheN0]);
+                                    Monitor.Exit(N0.CacheD.Lock[posicionEnCacheN0]);
                                     h.Ticks = 40;
                                     goto case Hilillo.EtapaSnooping.CARGAR;
                                 }
                                 else
                                 {
-                                    Debug.Assert(CacheD.Estado[posicionEnCache] == EstadoDeBloque.I);
                                     Debug.Print("Núcleo 1: Caso especial de SW con bloque en C."
                                         + " No es necesario cargar el dato de memoria. Pasando a etapa \"después\"...");
-                                    Monitor.Exit(N0.CacheD.NumBloque[posicionEnCacheN0]);
+                                    Monitor.Exit(N0.CacheD.Lock[posicionEnCacheN0]);
                                     h.EtapaDeSnooping = Hilillo.EtapaSnooping.DESPUES;
                                     goto case Hilillo.EtapaSnooping.DESPUES;
                                 }
@@ -583,6 +597,7 @@ namespace SimuladorMIPS
                         {
                             CacheD.Cache[j, posicionEnCache] = Memoria.Instance.Mem[direccionDeMemoria / 4 + j] = N0.CacheD.Cache[j, posicionEnCacheN0];
                         }
+                        CacheD.NumBloque[posicionEnCache] = bloqueDeMemoria;
 
                         if (h.IR.CodigoDeOperacion == CodOp.LW)
                         {
@@ -596,7 +611,7 @@ namespace SimuladorMIPS
                             N0.CacheD.Estado[posicionEnCacheN0] = EstadoDeBloque.I;
                         }
 
-                        Monitor.Exit(N0.CacheD.NumBloque[posicionEnCacheN0]);
+                        Monitor.Exit(N0.CacheD.Lock[posicionEnCacheN0]);
 
                         h.EtapaDeSnooping = Hilillo.EtapaSnooping.DESPUES;
                         goto case Hilillo.EtapaSnooping.DESPUES;
@@ -621,6 +636,7 @@ namespace SimuladorMIPS
                         {
                             CacheD.Cache[j, posicionEnCache] = Memoria.Instance.Mem[direccionDeMemoria / 4 + j];
                         }
+                        CacheD.NumBloque[posicionEnCache] = bloqueDeMemoria;
 
                         h.EtapaDeSnooping = Hilillo.EtapaSnooping.DESPUES;
                         goto case Hilillo.EtapaSnooping.DESPUES;
@@ -649,7 +665,7 @@ namespace SimuladorMIPS
                     }
 
                     Debug.Print("Núcleo 1: Terminamos de usar la caché. Se libera.");
-                    Monitor.Exit(CacheD.NumBloque[posicionEnCache]);
+                    Monitor.Exit(CacheD.Lock[posicionEnCache]);
 
                     // Las reservas deberían ser innecesarias en el núcleo 1.
                     //CacheD.Reservado[posicionEnCache] = false;
@@ -665,14 +681,25 @@ namespace SimuladorMIPS
             Debug.Print("N1: Entrando a Tick()...\n" +
                 "Fase de h: " + h.Fase + "\n");
 
+            //aumentar ciclos
+            h.Ciclos++;
+
             //tabla
-            if(h.Fase == Hilillo.FaseDeHilillo.V)
+            if (h.Fase == Hilillo.FaseDeHilillo.V)
             {
-                if (ColaHilillos.Count != 0)
+                lock (ColaHilillos)
                 {
-                    h = ColaHilillos.Dequeue();
-                    h.Fase = Hilillo.FaseDeHilillo.L;
-                    Terminado = false;
+                    if (ColaHilillos.Count != 0)
+                    {
+                        h = ColaHilillos.Dequeue();
+                        h.Fase = Hilillo.FaseDeHilillo.L;
+                        h.Quantum = this.Quantum;
+                        Terminado = false;
+                    }
+                    else
+                    {
+                        Terminado = true;
+                    }
                 }
             }
             else if (h.Fase == Hilillo.FaseDeHilillo.Exec)
@@ -681,33 +708,35 @@ namespace SimuladorMIPS
 
                 if (h.Quantum == 0)
                 {
-                    ColaHilillos.Enqueue(h);
-                    h = ColaHilillos.Dequeue();
+                    lock (ColaHilillos)
+                    {
+                        ColaHilillos.Enqueue(h);
+                        h = ColaHilillos.Dequeue();
+                        h.Quantum = this.Quantum;
+                    }
                 }
 
                 h.Fase = Hilillo.FaseDeHilillo.L;
             }
             else if (h.Fase == Hilillo.FaseDeHilillo.Fin)
             {
-                HilillosFinalizados.Add(h);
-                if (ColaHilillos.Count == 0)
+                lock (HilillosFinalizados)
                 {
-                    h = Hilillo.HililloVacio;
+                    HilillosFinalizados.Add(h);
                 }
-                else
+                lock (ColaHilillos)
                 {
-                    h = ColaHilillos.Dequeue();
-                    h.Fase = Hilillo.FaseDeHilillo.L;
+                    if (ColaHilillos.Count == 0)
+                    {
+                        h = Hilillo.HililloVacio;
+                    }
+                    else
+                    {
+                        h = ColaHilillos.Dequeue();
+                        h.Fase = Hilillo.FaseDeHilillo.L;
+                        h.Quantum = this.Quantum;
+                    }
                 }
-            }
-
-            //aumentar ciclos
-            h.Ciclos++;
-
-            //fin?
-            if (h.Fase == Hilillo.FaseDeHilillo.V)
-            {
-                Terminado = true;
             }
 
             //barrera
@@ -730,7 +759,7 @@ namespace SimuladorMIPS
             output += "\t\tRegistros: \n"
                 + "\t\t\tHilillo 0:\n"
                 + h.PrettyPrintRegistrosYCiclos()
-                + "\t\tCachés:\n"
+                + "\n\t\tCachés:\n"
                 + "\t\t\tCaché de instrucciones:\n\n";
 
             for (int i = 0; i < tamanoCache; i++)
@@ -755,7 +784,7 @@ namespace SimuladorMIPS
 
             for (int i = 0; i < tamanoCache; i++)
             {
-                output += CacheI.NumBloque[i] + "\t";
+                output += CacheI.NumBloque[i] + "\t\t";
             }
 
             output += "\n\n";
@@ -772,19 +801,21 @@ namespace SimuladorMIPS
             {
                 for (int j = 0; j < tamanoCache; j++)
                 {
-                    output += CacheD.Cache[i, j] + "\t";
+                    output += CacheD.Cache[i, j] + "\t\t";
                 }
                 output += "\n";
             }
 
             for (int i = 0; i < tamanoCache; i++)
             {
-                output += CacheD.NumBloque[i] + "\t";
+                output += CacheD.NumBloque[i] + "\t\t";
             }
+
+            output += "\n";
 
             for (int i = 0; i < tamanoCache; i++)
             {
-                output += CacheD.Estado[i] + "\t";
+                output += CacheD.Estado[i] + "\t\t";
             }
 
             return output;

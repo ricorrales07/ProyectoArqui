@@ -1,4 +1,6 @@
-﻿namespace SimuladorMIPS
+﻿using System;
+
+namespace SimuladorMIPS
 {
     enum EstadoDeBloque { I, M, C }
 
@@ -11,6 +13,7 @@
         public int[] NumBloque;
         public EstadoDeBloque[] Estado;
         public bool[] Reservado;
+        public Object[] Lock;
 
         public CacheDatos(int tamano)
         {
@@ -18,6 +21,7 @@
             NumBloque = new int[tamano];
             Estado = new EstadoDeBloque[tamano];
             Reservado = new bool[tamano];
+            Lock = new Object[tamano];
 
             for (int i = 0; i < 4; i++)
             {
@@ -32,6 +36,7 @@
                 NumBloque[i] = 0;
                 Estado[i] = EstadoDeBloque.I;
                 Reservado[i] = false;
+                Lock[i] = new Object();
             }
         }
     }

@@ -35,6 +35,8 @@ namespace SimuladorMIPS
             {
                 Mem[i] = 1;
             }
+            BusDeDatos = new Object();
+            BusDeInstrucciones = new Object();
             Debug.Print("Memoria creada.");
         }
 
@@ -52,9 +54,9 @@ namespace SimuladorMIPS
                 {
                     for (int k = 0; k < 4; k++)
                     {
-                        output += Mem[i] + " "; // YOLO.
+                        output += Mem[i * 16 + j * 4 + k] + " "; // YOLO.
                     }
-                    output += " ";
+                    output += "\t";
                 }
                 output += "\n";
             }
@@ -68,9 +70,9 @@ namespace SimuladorMIPS
                 {
                     for (int k = 0; k < 4; k++)
                     {
-                        output += Mem[i] + " "; // YOLO.
+                        output += Mem[i * 16 + j * 4 + k] + " "; // YOLO.
                     }
-                    output += " ";
+                    output += "\t";
                 }
                 output += "\n";
             }
@@ -81,8 +83,8 @@ namespace SimuladorMIPS
         // Los buses podrían ser cualquier estructura de datos.
         // Lo único que nos interesa son los locks de estos objetos.
         // Usé bool para que tomen menos espacio.
-        public bool BusDeDatos { get; set; }
-        public bool BusDeInstrucciones { get; set; }
+        public Object BusDeDatos { get; set; }
+        public Object BusDeInstrucciones { get; set; }
 
         public int[] Mem { get; set; }
 
