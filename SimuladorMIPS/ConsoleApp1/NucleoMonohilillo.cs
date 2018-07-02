@@ -425,7 +425,8 @@ namespace SimuladorMIPS
             int palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
 
             Debug.Print("Núcleo 1: Fallo de datos. Revisando bloque " + bloqueDeMemoria
-                + " en posición de caché " + posicionEnCache + ".");
+                + " en posición de caché " + posicionEnCache + " (encontrado bloque: " + CacheD.NumBloque[posicionEnCache]
+                + ", estado: " + CacheD.Estado[posicionEnCache] + ").");
 
             if (!h.Recursos)
             {
@@ -513,7 +514,9 @@ namespace SimuladorMIPS
                             && N0.CacheD.Estado[posicionEnCacheN0] == EstadoDeBloque.I)) // ¿Es la que queremos?
                     {
                         // No.
-                        Debug.Print("Núcleo 1: El bloque no está en N0.");
+                        Debug.Print("Núcleo 1: El bloque no está en N0 (posicionEnCacheN0: " + posicionEnCacheN0 
+                            + ", numBloque: " + N0.CacheD.NumBloque[posicionEnCacheN0]
+                            + ", Estado: " + N0.CacheD.Estado[posicionEnCacheN0] + ").");
                         if (!(h.IR.CodigoDeOperacion == CodOp.SW && CacheD.Estado[posicionEnCache] == EstadoDeBloque.C))
                         {
                             Debug.Print("Núcleo 1: Se debe cargar dato desde memoria. Pasando a etapa \"cargar\"...");
@@ -662,10 +665,11 @@ namespace SimuladorMIPS
                     else
                     {
                         Debug.Assert(h.IR.CodigoDeOperacion == CodOp.SW);
-                        Debug.Print("Núcleo 1: La operación es un SW, se copia de registro " + X + " a posición en caché "
-                            + posicionEnCache + ", palabra " + palabra + ". El bloque queda modificado.");
+                        Debug.Print("Núcleo 1: La operación es un SW, se copia de registro " + X + " (valor : " + h.Registro[X]
+                            + ") a posición en caché " + posicionEnCache + ", palabra " + palabra + ". El bloque queda modificado.");
                         CacheD.Cache[palabra, posicionEnCache] = h.Registro[X];
                         CacheD.Estado[posicionEnCache] = EstadoDeBloque.M;
+                        Debug.Print("Núcleo 0: Estado de bloque: " + CacheD.Estado[posicionEnCache]);
                     }
 
                     Debug.Print("Núcleo 1: Terminamos de usar la caché. Se libera.");

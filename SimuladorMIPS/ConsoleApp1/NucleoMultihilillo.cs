@@ -506,7 +506,8 @@ namespace SimuladorMIPS
             int palabra = (direccionDeMemoria - bloqueDeMemoria * 16) / 4;
 
             Debug.Print("Núcleo 0: Fallo de datos. Revisando bloque " + bloqueDeMemoria
-                + " en posición de caché " + posicionEnCache + " para hilillo " + i + ".");
+                + " en posición de caché " + posicionEnCache + " para hilillo " + i + " (encontrado bloque: " + CacheD.NumBloque[posicionEnCache]
+                + ", estado: " + CacheD.Estado[posicionEnCache] + ").");
 
             Debug.Print("Núcleo 0: Y: " + Y + ", Registro[Y]: " + h[i].Registro[Y] + ", n: " + n);
 
@@ -595,7 +596,9 @@ namespace SimuladorMIPS
                             && N1.CacheD.Estado[posicionEnCacheN1] == EstadoDeBloque.I)) // ¿Es la que queremos?
                     {
                         // No.
-                        Debug.Print("Núcleo 0: El bloque no está en N1.");
+                        Debug.Print("Núcleo 1: El bloque no está en N1 (posicionEnCacheN1: " + posicionEnCacheN1
+                            + ", numBloque: " + N1.CacheD.NumBloque[posicionEnCacheN1]
+                            + ", Estado: " + N1.CacheD.Estado[posicionEnCacheN1] + ").");
                         if (!(h[i].IR.CodigoDeOperacion == CodOp.SW && CacheD.Estado[posicionEnCache] == EstadoDeBloque.C))
                         {
                             Debug.Print("Núcleo 0: Se debe cargar dato desde memoria. Pasando a etapa \"cargar\"...");
@@ -748,6 +751,7 @@ namespace SimuladorMIPS
                             + ") a posición en caché " + posicionEnCache + ", palabra " + palabra +". El bloque queda modificado.");
                         CacheD.Cache[palabra, posicionEnCache] = h[i].Registro[X];
                         CacheD.Estado[posicionEnCache] = EstadoDeBloque.M;
+                        Debug.Print("Núcleo 0: Estado de bloque: " + CacheD.Estado[posicionEnCache]);
                     }
 
                     Debug.Print("Núcleo 0: Terminamos de usar la caché. Se libera.");
