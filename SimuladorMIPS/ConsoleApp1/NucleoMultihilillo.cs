@@ -982,7 +982,7 @@ namespace SimuladorMIPS
         // Retorna información general de los hilillos que están corriendo para desplegarla en pantalla durante la ejecución.
         public string PrettyPrintHilillos()
         {
-            string output = "\t\tHilillo 0: " + h[0].Nombre + "\n" // YOLO.
+            string output = "\t\tHilillo 0: " + h[0].Nombre + "\n"
                     + "\t\tHilillo 1: " + h[1].Nombre;
 
             return output;

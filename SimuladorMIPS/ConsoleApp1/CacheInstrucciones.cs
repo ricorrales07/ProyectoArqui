@@ -28,8 +28,6 @@ namespace SimuladorMIPS
     {
         // TIP: Ver diferencia entre "jagged array" y "multidimensional array".
         public Instruccion[,] Cache;
-        // WARNING: A la hora de bloquear, usar el lock de la variable NumBloque correspondiente.
-        // Por ejemplo, para bloquear la posición 3: TryEnter(CacheI.NumBloque[3]);
         public int[] NumBloque;
         public bool[] Reservado;
         public Object[] Lock;

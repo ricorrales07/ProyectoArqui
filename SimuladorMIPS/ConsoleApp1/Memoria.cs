@@ -54,7 +54,7 @@ namespace SimuladorMIPS
                 {
                     for (int k = 0; k < 4; k++)
                     {
-                        output += Mem[i * 16 + j * 4 + k] + " "; // YOLO.
+                        output += Mem[i * 16 + j * 4 + k] + " ";
                     }
                     output += "\t";
                 }
@@ -70,7 +70,7 @@ namespace SimuladorMIPS
                 {
                     for (int k = 0; k < 4; k++)
                     {
-                        output += Mem[96 + i * 16 + j * 4 + k] + " "; // YOLO.
+                        output += Mem[96 + i * 16 + j * 4 + k] + " ";
                     }
                     output += "\t";
                 }
@@ -80,9 +80,8 @@ namespace SimuladorMIPS
             return output;
         }
 
-        // Los buses podrían ser cualquier estructura de datos.
-        // Lo único que nos interesa son los locks de estos objetos.
-        // Usé bool para que tomen menos espacio.
+        // Los buses podrían ser cualquier objeto;
+        // lo único que nos interesa son los locks de estos objetos.
         public Object BusDeDatos { get; set; }
         public Object BusDeInstrucciones { get; set; }
 
