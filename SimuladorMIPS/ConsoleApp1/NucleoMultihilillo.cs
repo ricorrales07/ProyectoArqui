@@ -599,7 +599,8 @@ namespace SimuladorMIPS
                         Debug.Print("Núcleo 1: El bloque no está en N1 (posicionEnCacheN1: " + posicionEnCacheN1
                             + ", numBloque: " + N1.CacheD.NumBloque[posicionEnCacheN1]
                             + ", Estado: " + N1.CacheD.Estado[posicionEnCacheN1] + ").");
-                        if (!(h[i].IR.CodigoDeOperacion == CodOp.SW && CacheD.Estado[posicionEnCache] == EstadoDeBloque.C))
+                        if (!(h[i].IR.CodigoDeOperacion == CodOp.SW && CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria &&
+                            CacheD.Estado[posicionEnCache] == EstadoDeBloque.C))
                         {
                             Debug.Print("Núcleo 0: Se debe cargar dato desde memoria. Pasando a etapa \"cargar\"...");
                             h[i].EtapaDeSnooping = Hilillo.EtapaSnooping.CARGAR;
@@ -637,9 +638,9 @@ namespace SimuladorMIPS
                                 Debug.Print("Núcleo 0: La operación es un SW, por lo que invalidamos el bloque en N1.");
                                 N1.CacheD.Estado[posicionEnCacheN1] = EstadoDeBloque.I;
 
-                                if(CacheD.Estado[posicionEnCache] != EstadoDeBloque.C)
+                                if(!(CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] == EstadoDeBloque.C))
                                 {
-                                    Debug.Assert(CacheD.Estado[posicionEnCache] == EstadoDeBloque.I);
+                                    Debug.Assert(CacheD.Estado[posicionEnCache] != EstadoDeBloque.M);
                                     Debug.Print("Núcleo 0: Se debe cargar dato desde memoria. Pasando a etapa \"cargar\"...");
                                     h[i].EtapaDeSnooping = Hilillo.EtapaSnooping.CARGAR;
                                     Monitor.Exit(N1.CacheD.Lock[posicionEnCacheN1]);

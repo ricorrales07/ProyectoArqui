@@ -517,7 +517,8 @@ namespace SimuladorMIPS
                         Debug.Print("Núcleo 1: El bloque no está en N0 (posicionEnCacheN0: " + posicionEnCacheN0 
                             + ", numBloque: " + N0.CacheD.NumBloque[posicionEnCacheN0]
                             + ", Estado: " + N0.CacheD.Estado[posicionEnCacheN0] + ").");
-                        if (!(h.IR.CodigoDeOperacion == CodOp.SW && CacheD.Estado[posicionEnCache] == EstadoDeBloque.C))
+                        if (!(h.IR.CodigoDeOperacion == CodOp.SW && CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria &&
+                            CacheD.Estado[posicionEnCache] == EstadoDeBloque.C))
                         {
                             Debug.Print("Núcleo 1: Se debe cargar dato desde memoria. Pasando a etapa \"cargar\"...");
                             h.EtapaDeSnooping = Hilillo.EtapaSnooping.CARGAR;
@@ -555,9 +556,9 @@ namespace SimuladorMIPS
                                 Debug.Print("Núcleo 1: La operación es un SW, por lo que invalidamos el bloque en N0.");
                                 N0.CacheD.Estado[posicionEnCacheN0] = EstadoDeBloque.I;
 
-                                if (CacheD.Estado[posicionEnCache] != EstadoDeBloque.C)
+                                if (!(CacheD.NumBloque[posicionEnCache] == bloqueDeMemoria && CacheD.Estado[posicionEnCache] == EstadoDeBloque.C))
                                 {
-                                    Debug.Assert(CacheD.Estado[posicionEnCache] == EstadoDeBloque.I);
+                                    Debug.Assert(CacheD.Estado[posicionEnCache] != EstadoDeBloque.M);
                                     Debug.Print("Núcleo 1: Se debe cargar dato desde memoria. Pasando a etapa \"cargar\"...");
                                     h.EtapaDeSnooping = Hilillo.EtapaSnooping.CARGAR;
                                     Monitor.Exit(N0.CacheD.Lock[posicionEnCacheN0]);
@@ -597,8 +598,8 @@ namespace SimuladorMIPS
                     {
                         Debug.Assert(h.Ticks == 0);
                         Debug.Print("Núcleo 1: Copiando bloque de la posición de caché " + posicionEnCacheN0
-                            + " (en N0) a dirección de memoria " + (bloqueDeMemoria * 16) + "(posición de memoria simulada: "
-                            + (direccionDeMemoria * 4) + ") y a la posición de caché " + posicionEnCache + " en N1.");
+                            + " (en N0) a dirección de memoria " + (bloqueDeMemoria * 16) + " (posición de memoria simulada: "
+                            + (bloqueDeMemoria * 4) + ") y a la posición de caché " + posicionEnCache + " en N1.");
 
                         for (int j = 0; j < 4; j++)
                         {
@@ -665,7 +666,7 @@ namespace SimuladorMIPS
                     else
                     {
                         Debug.Assert(h.IR.CodigoDeOperacion == CodOp.SW);
-                        Debug.Print("Núcleo 1: La operación es un SW, se copia de registro " + X + " (valor : " + h.Registro[X]
+                        Debug.Print("Núcleo 1: La operación es un SW, se copia de registro " + X + " (valor: " + h.Registro[X]
                             + ") a posición en caché " + posicionEnCache + ", palabra " + palabra + ". El bloque queda modificado.");
                         CacheD.Cache[palabra, posicionEnCache] = h.Registro[X];
                         CacheD.Estado[posicionEnCache] = EstadoDeBloque.M;
